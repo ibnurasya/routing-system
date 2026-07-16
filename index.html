@@ -180,10 +180,10 @@
         <input type="text" id="startLng" placeholder="106.8944306" value="106.8944306">
       </div>
       <div class="field" style="justify-content:flex-end;">
-        <button class="secondary" id="btnGeo" type="button">Gunakan lokasi saya</button>
+        <button class="secondary" id="btnConfirmStart" type="button">Konfirmasi koordinat</button>
       </div>
     </div>
-    <p class="hint">Default di atas adalah koordinat Graha Rekso — ganti sesuai titik keberangkatan Anda hari ini bila berbeda.</p>
+    <p class="hint" id="startConfirmMsg">Default di atas adalah koordinat Graha Rekso — ganti sesuai titik keberangkatan Anda hari ini, lalu klik "Konfirmasi koordinat".</p>
   </section>
 
   <section>
@@ -193,8 +193,11 @@
     <p class="hint">Tempel langsung dari Excel/Google Sheets (kolom: Nama Merchant, Alamat Merchant, Latitude, Longitude — dipisah tab atau koma). Baris header opsional, akan terdeteksi otomatis.</p>
     <div class="btn-row">
       <button id="btnLoadSample" class="secondary" type="button">Muat contoh data</button>
+      <label class="secondary" id="btnUpload" for="fileUpload" style="display:inline-flex;align-items:center;padding:10px 16px;border-radius:6px;border:1px solid var(--line);font-size:13.5px;font-weight:600;cursor:pointer;">Upload file (.csv/.xlsx)</label>
+      <input type="file" id="fileUpload" accept=".csv,.xlsx,.xls" style="display:none;">
       <button id="btnCompute" type="button">Urutkan rute</button>
     </div>
+    <p class="hint" id="uploadFileName"></p>
     <div class="error" id="errorBox"></div>
   </section>
 
@@ -208,13 +211,13 @@
       <button id="btnGmaps" type="button">Buka rute di Google Maps</button>
       <button id="btnExcel" class="secondary" type="button">Unduh Excel (.xlsx)</button>
     </div>
-    <p class="hint">Google Maps akan menghitung rute jalan sesungguhnya (bukan garis lurus) dan bisa langsung dipakai navigasi. File Excel berisi nomor urut, nama merchant, alamat, link Google Maps per merchant, jarak dari titik sebelumnya, dan jarak kumulatif.</p>
+    <p class="hint">Google Maps akan menghitung rute jalan sesungguhnya (bukan garis lurus) dan bisa langsung dipakai navigasi. File Excel berisi nomor urut, nama merchant, alamat, jarak dari titik sebelumnya, dan jarak kumulatif (tanpa link Maps — link tersedia di tabel bawah untuk dibuka langsung dari sini).</p>
 
     <div id="map"></div>
 
     <table style="margin-top:24px;">
       <thead>
-        <tr><th>Urutan</th><th>Merchant</th><th class="num">Jarak dari titik sebelumnya</th><th class="num">Jarak kumulatif</th></tr>
+        <tr><th>Urutan</th><th>Merchant</th><th>Maps</th><th class="num">Jarak dari titik sebelumnya</th><th class="num">Jarak kumulatif</th></tr>
       </thead>
       <tbody id="resultBody"></tbody>
     </table>
@@ -245,17 +248,74 @@
     document.getElementById('dataInput').value = txt;
   });
 
-  document.getElementById('btnGeo').addEventListener('click', function(){
-    if(!navigator.geolocation){
-      showError("Browser ini tidak mendukung deteksi lokasi otomatis.");
+  document.getElementById('btnConfirmStart').addEventListener('click', function(){
+    var msg = document.getElementById('startConfirmMsg');
+    var lat = parseFloat(document.getElementById('startLat').value.replace(",", "."));
+    var lng = parseFloat(document.getElementById('startLng').value.replace(",", "."));
+    if(isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180){
+      msg.textContent = "Koordinat tidak valid. Periksa kembali latitude dan longitude.";
+      msg.style.color = "#B42318";
       return;
     }
-    navigator.geolocation.getCurrentPosition(function(pos){
-      document.getElementById('startLat').value = pos.coords.latitude.toFixed(6);
-      document.getElementById('startLng').value = pos.coords.longitude.toFixed(6);
-    }, function(){
-      showError("Gagal mengambil lokasi. Isi koordinat secara manual.");
-    });
+    msg.textContent = "Koordinat terkonfirmasi: " + lat.toFixed(6) + ", " + lng.toFixed(6);
+    msg.style.color = "var(--teal)";
+  });
+
+  function findCol(header, candidates){
+    for(var i=0;i<header.length;i++){
+      for(var j=0;j<candidates.length;j++){
+        if(header[i].indexOf(candidates[j]) >= 0) return i;
+      }
+    }
+    return -1;
+  }
+
+  document.getElementById('fileUpload').addEventListener('change', function(evt){
+    var file = evt.target.files[0];
+    if(!file) return;
+    clearError();
+    var nameLbl = document.getElementById('uploadFileName');
+    nameLbl.textContent = "File dipilih: " + file.name;
+
+    var reader = new FileReader();
+    reader.onload = function(e){
+      try{
+        var data = new Uint8Array(e.target.result);
+        var wb = XLSX.read(data, { type: 'array' });
+        var sheet = wb.Sheets[wb.SheetNames[0]];
+        var rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' });
+        if(!rows.length){
+          showError("File kosong atau tidak terbaca.");
+          return;
+        }
+        var header = rows[0].map(function(h){ return String(h).toLowerCase().trim(); });
+        var colName = findCol(header, ['nama merchant', 'nama']);
+        var colAddr = findCol(header, ['alamat merchant', 'alamat']);
+        var colLat = findCol(header, ['latitude merchant', 'latitude', 'lat']);
+        var colLng = findCol(header, ['longitude merchant', 'longitude', 'long', 'lng']);
+
+        if(colName < 0 || colAddr < 0 || colLat < 0 || colLng < 0){
+          showError("Kolom tidak lengkap. Pastikan file punya kolom Nama Merchant, Alamat Merchant, Latitude, Longitude.");
+          return;
+        }
+
+        var body = rows.slice(1).filter(function(r){ return r[colName]; });
+        var lines = body.map(function(r){
+          return [r[colName], r[colAddr], r[colLat], r[colLng]].join("\t");
+        });
+
+        if(!lines.length){
+          showError("Tidak ada baris data yang bisa dibaca dari file ini.");
+          return;
+        }
+
+        document.getElementById('dataInput').value =
+          "Nama Merchant\tAlamat Merchant\tLatitude Merchant\tLongitude Merchant\n" + lines.join("\n");
+      }catch(err){
+        showError("Gagal membaca file. Pastikan formatnya .csv atau .xlsx dengan kolom yang sesuai.");
+      }
+    };
+    reader.readAsArrayBuffer(file);
   });
 
   function showError(msg){
@@ -359,6 +419,7 @@
       tr.innerHTML =
         '<td><span class="badge">' + (idx+1) + '</span></td>' +
         '<td><div class="merchant-name">' + escapeHtml(p.name) + '</div><div class="merchant-addr">' + escapeHtml(p.addr) + '</div></td>' +
+        '<td><a href="https://www.google.com/maps?q=' + p.lat + ',' + p.lng + '" target="_blank" rel="noopener" style="color:var(--teal);font-size:12.5px;font-weight:600;text-decoration:none;">Buka Maps</a></td>' +
         '<td class="num">' + p._legDistance.toFixed(1) + ' km</td>' +
         '<td class="num">' + cum.toFixed(1) + ' km</td>';
       body.appendChild(tr);
@@ -415,11 +476,9 @@
     var wsData = [];
     wsData.push(['Titik awal (latitude, longitude)', lastStart.lat + ', ' + lastStart.lng]);
     wsData.push([]);
-    wsData.push(['No', 'Nama Merchant', 'Alamat Merchant', 'Link Google Maps', 'Jarak dari Titik Sebelumnya (km)', 'Jarak Kumulatif (km)']);
+    wsData.push(['No', 'Nama Merchant', 'Alamat Merchant', 'Jarak dari Titik Sebelumnya (km)', 'Jarak Kumulatif (km)']);
 
-    var headerRowIdx = wsData.length - 1;
     var cum = 0;
-    var linkCells = [];
 
     lastOrdered.forEach(function(p, idx){
       cum += p._legDistance;
@@ -427,14 +486,9 @@
         idx + 1,
         p.name,
         p.addr,
-        'Buka di Google Maps',
         Number(p._legDistance.toFixed(2)),
         Number(cum.toFixed(2))
       ]);
-      linkCells.push({
-        row: wsData.length - 1,
-        url: 'https://www.google.com/maps?q=' + p.lat + ',' + p.lng
-      });
     });
 
     var ws = XLSX.utils.aoa_to_sheet(wsData);
@@ -442,17 +496,9 @@
       { wch: 5 },
       { wch: 28 },
       { wch: 38 },
-      { wch: 22 },
       { wch: 28 },
       { wch: 20 }
     ];
-
-    linkCells.forEach(function(lc){
-      var ref = XLSX.utils.encode_cell({ r: lc.row, c: 3 });
-      if(ws[ref]){
-        ws[ref].l = { Target: lc.url };
-      }
-    });
 
     var wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Rute Kunjungan');
