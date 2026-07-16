@@ -150,7 +150,7 @@
   }
   .badge.start{background:var(--ink);color:#fff;}
   .merchant-name{font-weight:600;}
-  .merchant-addr{color:var(--muted);font-size:12.5px;margin-top:2px;}
+  .merchant-addr{color:var(--muted);font-size:12.5px;margin-top:2px;max-width:220px;}
 
   .summary-row{display:flex;gap:24px;margin:0 0 16px;flex-wrap:wrap;}
   .summary-card{
@@ -197,6 +197,46 @@
   .review-card .lbl{font-size:11.5px;color:var(--muted);margin-bottom:4px;}
   .review-card .val{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--ink);}
   .edit-bar{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--line);}
+
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:24px;border-radius:8px;}
+  .table-scroll table{margin-top:0;min-width:600px;}
+  .scroll-hint{display:none;font-size:11.5px;color:var(--muted);margin:8px 0 0;}
+
+  @media (max-width: 640px){
+    .app{padding-bottom:40px;}
+    header.hero{padding:26px 18px 20px;}
+    header.hero h1{font-size:19px;}
+    header.hero p{font-size:13px;}
+    section{padding:18px 18px;}
+    h2{font-size:15.5px;}
+
+    .stepper{padding:16px 12px 0;}
+    .stepper-item{min-width:0;flex:1;}
+    .stepper-circle{width:24px;height:24px;font-size:11px;}
+    .stepper-label{font-size:9px;white-space:normal;line-height:1.2;}
+    .stepper-line{margin:11px 2px 0;}
+
+    .row{flex-direction:column;}
+    .field{width:100%;}
+    input[type=text]{width:100%;}
+
+    .btn-row{flex-direction:column;align-items:stretch;}
+    .btn-row button{width:100%;}
+    .wizard-nav{flex-direction:column-reverse;align-items:stretch;gap:10px;}
+    .wizard-nav button{width:100%;}
+    .upload-box{flex-direction:column;align-items:stretch;}
+    .review-row{gap:10px;}
+    .review-card{min-width:0;flex:1 1 auto;}
+    .edit-bar{gap:10px;}
+
+    .summary-row{gap:10px;}
+    .summary-card{min-width:0;flex:1 1 calc(50% - 6px);padding:10px 12px;}
+    .summary-card .num{font-size:17px;}
+
+    #map{height:240px;}
+
+    .scroll-hint{display:block;}
+  }
 </style>
 </head>
 <body>
@@ -205,7 +245,8 @@
   <header class="hero">
     <p class="step-label" style="color:#8B92FF;">Sales route tool</p>
     <h1>Rute kunjungan merchant</h1>
-    <p>Tempel data merchant, tentukan titik awal, dan urutan visit otomatis dihitung dari jarak terdekat.</p>
+    <p>Tempel data merchant, tentukan titik awal, dan urutan visit otomatis dihitung dari jarak terdekat.</p> </br>
+    <p> Branch X Program ODP Mandiri Batch 340 - KCP Graha Rekso</p>
     <div class="route-strip">
       <div class="dot start"></div><div class="seg"></div>
       <div class="dot"></div><div class="seg"></div>
@@ -329,12 +370,15 @@
 
     <div id="map"></div>
 
-    <table style="margin-top:24px;">
-      <thead>
-        <tr><th>Urutan</th><th>Merchant</th><th>Maps</th><th class="num">Jarak dari titik sebelumnya</th><th class="num">Jarak kumulatif</th></tr>
-      </thead>
-      <tbody id="resultBody"></tbody>
-    </table>
+    <p class="scroll-hint">Geser tabel ke kanan untuk melihat kolom lainnya.</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>Urutan</th><th>Merchant</th><th>Maps</th><th class="num">Jarak dari titik sebelumnya</th><th class="num">Jarak kumulatif</th></tr>
+        </thead>
+        <tbody id="resultBody"></tbody>
+      </table>
+    </div>
   </section>
 
 </div>
