@@ -4,20 +4,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rute Kunjungan Merchant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
 <style>
   :root{
-    --ink:#1C2128;
-    --ink-soft:#3A4048;
+    --ink:#003C78;
+    --ink-soft:#0A5A9C;
     --paper:#F4F6F8;
     --card:#FFFFFF;
     --line:#DCE1E6;
-    --route:#FF6B35;
-    --route-dark:#C8481A;
-    --teal:#0F8C7C;
+    --route:#FFB400;
+    --route-dark:#003C78;
+    --teal:#0072CE;
     --muted:#6B7280;
     --mono:'IBM Plex Mono', 'JetBrains Mono', monospace;
     --sans:'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --heading:'Plus Jakarta Sans', var(--sans);
   }
   *{box-sizing:border-box;}
   body{
@@ -35,9 +39,9 @@
     overflow:hidden;
   }
   header.hero h1{
-    font-family:var(--mono);
+    font-family:var(--heading);
     font-size:22px;
-    font-weight:600;
+    font-weight:700;
     letter-spacing:-0.02em;
     margin:0 0 6px;
   }
@@ -59,19 +63,20 @@
     background:var(--route);
     flex-shrink:0;
   }
-  .dot.start{background:#4ADE80;}
+  .dot.start{background:#fff;}
   .seg{height:1px;background:repeating-linear-gradient(90deg,#565D66 0 6px,transparent 6px 12px);flex:1;min-width:14px;}
 
   section{padding:26px 32px;border-bottom:1px solid var(--line);}
   .step-label{
-    font-family:var(--mono);
+    font-family:var(--sans);
+    font-weight:600;
     font-size:11px;
     text-transform:uppercase;
     letter-spacing:0.08em;
     color:var(--muted);
     margin:0 0 4px;
   }
-  h2{font-size:17px;font-weight:600;margin:0 0 14px;}
+  h2{font-family:var(--heading);font-size:17px;font-weight:600;margin:0 0 14px;}
 
   .row{display:flex;gap:12px;flex-wrap:wrap;}
   .field{display:flex;flex-direction:column;gap:5px;}
@@ -103,6 +108,22 @@
   button:hover{opacity:0.92;}
   button:active{transform:scale(0.98);}
   .btn-row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+  .text-link{
+    background:none;border:none;padding:0;
+    color:var(--teal);font-size:12.5px;font-weight:600;
+    text-decoration:underline;cursor:pointer;font-family:var(--sans);
+  }
+  .text-link:hover{opacity:0.8;}
+  .upload-box{
+    border:1px dashed var(--line);border-radius:8px;
+    padding:18px 16px;display:flex;align-items:center;justify-content:space-between;
+    flex-wrap:wrap;gap:10px;background:var(--card);
+  }
+  .or-divider{
+    display:flex;align-items:center;gap:10px;margin:20px 0;
+    font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;
+  }
+  .or-divider::before,.or-divider::after{content:"";flex:1;height:1px;background:var(--line);}
 
   .hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5;}
   .error{font-size:13px;color:#B42318;background:#FEECEC;border:1px solid #F4C1C1;padding:8px 12px;border-radius:6px;margin-top:10px;display:none;}
@@ -110,7 +131,8 @@
   table{width:100%;border-collapse:collapse;font-size:13.5px;}
   th{
     text-align:left;
-    font-family:var(--mono);
+    font-family:var(--sans);
+    font-weight:600;
     font-size:11px;
     text-transform:uppercase;
     letter-spacing:0.05em;
@@ -123,10 +145,10 @@
   .badge{
     display:inline-flex;align-items:center;justify-content:center;
     width:22px;height:22px;border-radius:50%;
-    background:var(--route);color:#fff;
-    font-family:var(--mono);font-size:11px;font-weight:600;
+    background:var(--route);color:var(--ink);
+    font-family:var(--mono);font-size:11px;font-weight:700;
   }
-  .badge.start{background:#4ADE80;color:#0B3A1F;}
+  .badge.start{background:var(--ink);color:#fff;}
   .merchant-name{font-weight:600;}
   .merchant-addr{color:var(--muted);font-size:12.5px;margin-top:2px;}
 
@@ -147,8 +169,9 @@
     display:flex;align-items:center;justify-content:center;
     box-shadow:0 1px 3px rgba(0,0,0,0.3);
   }
-  .num-pin span{transform:rotate(45deg);color:#fff;font-family:var(--mono);font-size:11px;font-weight:700;}
-  .num-pin.start{background:#22C55E;}
+  .num-pin span{transform:rotate(45deg);color:var(--ink);font-family:var(--mono);font-size:11px;font-weight:700;}
+  .num-pin.start{background:var(--ink);}
+  .num-pin.start span{color:#fff;}
 </style>
 </head>
 <body>
@@ -188,17 +211,32 @@
 
   <section>
     <p class="step-label">Langkah 2</p>
-    <h2>Daftar calon merchant</h2>
+    <h2>Masukkan data merchant</h2>
+    <p class="hint" style="margin-top:-6px;margin-bottom:14px;">Pilih salah satu: tempel data manual, atau upload file di bawahnya.</p>
+
     <textarea id="dataInput" placeholder="Nama Merchant, Alamat Merchant, Latitude, Longitude"></textarea>
     <p class="hint">Tempel langsung dari Excel/Google Sheets (kolom: Nama Merchant, Alamat Merchant, Latitude, Longitude — dipisah tab atau koma). Baris header opsional, akan terdeteksi otomatis.</p>
-    <div class="btn-row">
-      <button id="btnLoadSample" class="secondary" type="button">Muat contoh data</button>
-      <label class="secondary" id="btnUpload" for="fileUpload" style="display:inline-flex;align-items:center;padding:10px 16px;border-radius:6px;border:1px solid var(--line);font-size:13.5px;font-weight:600;cursor:pointer;">Upload file (.csv/.xlsx)</label>
-      <input type="file" id="fileUpload" accept=".csv,.xlsx,.xls" style="display:none;">
-      <button id="btnCompute" type="button">Urutkan rute</button>
+    <button id="btnLoadSample" class="text-link" type="button" style="margin-top:2px;">Coba dengan contoh data</button>
+
+    <div class="or-divider">atau upload file</div>
+
+    <div class="upload-box">
+      <div>
+        <label id="btnUpload" for="fileUpload" style="display:inline-flex;align-items:center;padding:10px 16px;border-radius:6px;border:1px solid var(--ink);background:var(--ink);color:#fff;font-size:13.5px;font-weight:600;cursor:pointer;">Upload file (.csv/.xlsx)</label>
+        <input type="file" id="fileUpload" accept=".csv,.xlsx,.xls" style="display:none;">
+        <p class="hint" id="uploadFileName" style="margin-top:8px;margin-bottom:0;"></p>
+      </div>
+      <button id="btnTemplate" class="text-link" type="button">Belum tau bentuk file? Unduh template Format</button>
     </div>
-    <p class="hint" id="uploadFileName"></p>
+
     <div class="error" id="errorBox"></div>
+  </section>
+
+  <section>
+    <p class="step-label">Langkah 3</p>
+    <h2>Jalankan</h2>
+    <p class="hint" style="margin-top:-6px;margin-bottom:14px;">Data merchant sudah terisi lewat upload atau tempel manual? Klik tombol di bawah untuk mengurutkan rute kunjungan.</p>
+    <button id="btnCompute" type="button" style="padding:12px 28px;font-size:14.5px;">Urutkan rute</button>
   </section>
 
   <section id="resultSection" style="display:none;">
@@ -295,7 +333,7 @@
         var colLng = findCol(header, ['longitude merchant', 'longitude', 'long', 'lng']);
 
         if(colName < 0 || colAddr < 0 || colLat < 0 || colLng < 0){
-          showError("Kolom tidak lengkap. Pastikan file punya kolom Nama Merchant, Alamat Merchant, Latitude, Longitude.");
+          showError("Kolom tidak lengkap. Pastikan file punya kolom Nama Merchant, Alamat Merchant, Latitude, Longitude — atau pakai template berikut.", true);
           return;
         }
 
@@ -305,23 +343,42 @@
         });
 
         if(!lines.length){
-          showError("Tidak ada baris data yang bisa dibaca dari file ini.");
+          showError("Tidak ada baris data yang bisa dibaca dari file ini.", true);
           return;
         }
 
         document.getElementById('dataInput').value =
           "Nama Merchant\tAlamat Merchant\tLatitude Merchant\tLongitude Merchant\n" + lines.join("\n");
       }catch(err){
-        showError("Gagal membaca file. Pastikan formatnya .csv atau .xlsx dengan kolom yang sesuai.");
+        showError("Gagal membaca file. Pastikan formatnya .csv atau .xlsx dengan kolom yang sesuai — atau pakai template berikut.", true);
       }
     };
     reader.readAsArrayBuffer(file);
   });
 
-  function showError(msg){
+  function generateTemplateFile(){
+    var wsData = [
+      ['Nama Merchant', 'Alamat Merchant', 'Latitude Merchant', 'Longitude Merchant'],
+      ['Toko Sinar Jaya', 'Jl. Sudirman No. 12, Jakarta Pusat', '-6.2088', '106.8228'],
+      ['Warung Makmur', 'Jl. Gatot Subroto No. 45, Jakarta Selatan', '-6.2350', '106.8296']
+    ];
+    var ws = XLSX.utils.aoa_to_sheet(wsData);
+    ws['!cols'] = [{ wch: 26 }, { wch: 38 }, { wch: 16 }, { wch: 16 }];
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Template Merchant');
+    XLSX.writeFile(wb, 'template-data-merchant.xlsx');
+  }
+
+  document.getElementById('btnTemplate').addEventListener('click', generateTemplateFile);
+
+  function showError(msg, withTemplate){
     var box = document.getElementById('errorBox');
-    box.textContent = msg;
+    box.innerHTML = escapeHtml(msg) +
+      (withTemplate ? ' <button type="button" id="btnTemplateInline" style="margin-left:8px;padding:4px 10px;font-size:12px;border-radius:5px;border:1px solid #B42318;background:transparent;color:#B42318;cursor:pointer;">Unduh template Format</button>' : '');
     box.style.display = 'block';
+    if(withTemplate){
+      document.getElementById('btnTemplateInline').addEventListener('click', generateTemplateFile);
+    }
   }
   function clearError(){
     document.getElementById('errorBox').style.display = 'none';
@@ -453,7 +510,7 @@
       L.marker([p.lat, p.lng], {icon: icon}).addTo(map).bindPopup(escapeHtml(p.name));
     });
 
-    L.polyline(latlngs, {color:'#FF6B35', weight:3, dashArray:'6 6'}).addTo(map);
+    L.polyline(latlngs, {color:'#FFB400', weight:3, dashArray:'6 6'}).addTo(map);
     map.fitBounds(L.latLngBounds(latlngs), {padding:[30,30]});
   }
 
