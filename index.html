@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rute Kunjungan Merchant</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+<style>
+  :root{
+    --ink:#1C2128;
+    --ink-soft:#3A4048;
+    --paper:#F4F6F8;
+    --card:#FFFFFF;
+    --line:#DCE1E6;
+    --route:#FF6B35;
+    --route-dark:#C8481A;
+    --teal:#0F8C7C;
+    --muted:#6B7280;
+    --mono:'IBM Plex Mono', 'JetBrains Mono', monospace;
+    --sans:'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:var(--sans);
+    background:var(--paper);
+    color:var(--ink);
+  }
+  .app{max-width:1040px;margin:0 auto;padding:0 0 64px;}
+  header.hero{
+    background:var(--ink);
+    color:#EDEFF2;
+    padding:36px 32px 28px;
+    position:relative;
+    overflow:hidden;
+  }
+  header.hero h1{
+    font-family:var(--mono);
+    font-size:22px;
+    font-weight:600;
+    letter-spacing:-0.02em;
+    margin:0 0 6px;
+  }
+  header.hero p{
+    margin:0;
+    color:#A7ADB6;
+    font-size:14px;
+    max-width:520px;
+    line-height:1.5;
+  }
+  .route-strip{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin-top:20px;
+  }
+  .dot{
+    width:9px;height:9px;border-radius:50%;
+    background:var(--route);
+    flex-shrink:0;
+  }
+  .dot.start{background:#4ADE80;}
+  .seg{height:1px;background:repeating-linear-gradient(90deg,#565D66 0 6px,transparent 6px 12px);flex:1;min-width:14px;}
+
+  section{padding:26px 32px;border-bottom:1px solid var(--line);}
+  .step-label{
+    font-family:var(--mono);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--muted);
+    margin:0 0 4px;
+  }
+  h2{font-size:17px;font-weight:600;margin:0 0 14px;}
+
+  .row{display:flex;gap:12px;flex-wrap:wrap;}
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field label{font-size:12.5px;color:var(--muted);}
+  input[type=text],input[type=number],textarea{
+    font-family:var(--sans);
+    font-size:14px;
+    padding:9px 11px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    background:var(--card);
+    color:var(--ink);
+  }
+  input[type=number]{width:150px;}
+  textarea{width:100%;font-family:var(--mono);font-size:12.5px;min-height:130px;resize:vertical;line-height:1.6;}
+  button{
+    font-family:var(--sans);
+    font-size:13.5px;
+    font-weight:600;
+    padding:10px 16px;
+    border-radius:6px;
+    border:1px solid var(--ink);
+    background:var(--ink);
+    color:#fff;
+    cursor:pointer;
+  }
+  button.secondary{background:transparent;color:var(--ink);border:1px solid var(--line);}
+  button.secondary:hover{border-color:var(--ink);}
+  button:hover{opacity:0.92;}
+  button:active{transform:scale(0.98);}
+  .btn-row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+
+  .hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5;}
+  .error{font-size:13px;color:#B42318;background:#FEECEC;border:1px solid #F4C1C1;padding:8px 12px;border-radius:6px;margin-top:10px;display:none;}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{
+    text-align:left;
+    font-family:var(--mono);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--muted);
+    padding:8px 10px;
+    border-bottom:1px solid var(--line);
+  }
+  td{padding:10px 10px;border-bottom:1px solid var(--line);vertical-align:top;}
+  td.num{font-family:var(--mono);color:var(--ink-soft);white-space:nowrap;}
+  .badge{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:22px;height:22px;border-radius:50%;
+    background:var(--route);color:#fff;
+    font-family:var(--mono);font-size:11px;font-weight:600;
+  }
+  .badge.start{background:#4ADE80;color:#0B3A1F;}
+  .merchant-name{font-weight:600;}
+  .merchant-addr{color:var(--muted);font-size:12.5px;margin-top:2px;}
+
+  .summary-row{display:flex;gap:24px;margin:0 0 16px;flex-wrap:wrap;}
+  .summary-card{
+    background:var(--card);border:1px solid var(--line);border-radius:8px;
+    padding:12px 16px;min-width:140px;
+  }
+  .summary-card .num{font-family:var(--mono);font-size:20px;font-weight:600;color:var(--route-dark);}
+  .summary-card .lbl{font-size:11.5px;color:var(--muted);margin-top:2px;}
+
+  #map{width:100%;height:340px;border-radius:8px;border:1px solid var(--line);margin-top:16px;}
+  .empty{color:var(--muted);font-size:13.5px;padding:20px 0;}
+  .leaflet-div-icon{background:transparent;border:none;}
+  .num-pin{
+    width:26px;height:26px;border-radius:50% 50% 50% 0;
+    background:var(--route);transform:rotate(-45deg);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 1px 3px rgba(0,0,0,0.3);
+  }
+  .num-pin span{transform:rotate(45deg);color:#fff;font-family:var(--mono);font-size:11px;font-weight:700;}
+  .num-pin.start{background:#22C55E;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="hero">
+    <p class="step-label" style="color:#8B92FF;">Sales route tool</p>
+    <h1>Rute kunjungan merchant</h1>
+    <p>Tempel data merchant, tentukan titik awal, dan urutan visit otomatis dihitung dari jarak terdekat.</p>
+    <div class="route-strip">
+      <div class="dot start"></div><div class="seg"></div>
+      <div class="dot"></div><div class="seg"></div>
+      <div class="dot"></div><div class="seg"></div>
+      <div class="dot"></div><div class="seg"></div>
+      <div class="dot"></div>
+    </div>
+  </header>
+
+  <section>
+    <p class="step-label">Langkah 1</p>
+    <h2>Titik awal Anda</h2>
+    <div class="row">
+      <div class="field">
+        <label for="startLat">Latitude</label>
+        <input type="text" id="startLat" placeholder="-6.1448157" value="-6.1448157">
+      </div>
+      <div class="field">
+        <label for="startLng">Longitude</label>
+        <input type="text" id="startLng" placeholder="106.8944306" value="106.8944306">
+      </div>
+      <div class="field" style="justify-content:flex-end;">
+        <button class="secondary" id="btnGeo" type="button">Gunakan lokasi saya</button>
+      </div>
+    </div>
+    <p class="hint">Default di atas adalah koordinat Graha Rekso — ganti sesuai titik keberangkatan Anda hari ini bila berbeda.</p>
+  </section>
+
+  <section>
+    <p class="step-label">Langkah 2</p>
+    <h2>Daftar calon merchant</h2>
+    <textarea id="dataInput" placeholder="Nama Merchant, Alamat Merchant, Latitude, Longitude"></textarea>
+    <p class="hint">Tempel langsung dari Excel/Google Sheets (kolom: Nama Merchant, Alamat Merchant, Latitude, Longitude — dipisah tab atau koma). Baris header opsional, akan terdeteksi otomatis.</p>
+    <div class="btn-row">
+      <button id="btnLoadSample" class="secondary" type="button">Muat contoh data</button>
+      <button id="btnCompute" type="button">Urutkan rute</button>
+    </div>
+    <div class="error" id="errorBox"></div>
+  </section>
+
+  <section id="resultSection" style="display:none;">
+    <p class="step-label">Hasil</p>
+    <h2>Urutan visit yang disarankan</h2>
+
+    <div class="summary-row" id="summaryRow"></div>
+
+    <div class="btn-row">
+      <button id="btnGmaps" type="button">Buka rute di Google Maps</button>
+      <button id="btnExcel" class="secondary" type="button">Unduh Excel (.xlsx)</button>
+    </div>
+    <p class="hint">Google Maps akan menghitung rute jalan sesungguhnya (bukan garis lurus) dan bisa langsung dipakai navigasi. File Excel berisi nomor urut, nama merchant, alamat, link Google Maps per merchant, jarak dari titik sebelumnya, dan jarak kumulatif.</p>
+
+    <div id="map"></div>
+
+    <table style="margin-top:24px;">
+      <thead>
+        <tr><th>Urutan</th><th>Merchant</th><th class="num">Jarak dari titik sebelumnya</th><th class="num">Jarak kumulatif</th></tr>
+      </thead>
+      <tbody id="resultBody"></tbody>
+    </table>
+  </section>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(function(){
+  var sample = [
+    ["Toko Sinar Jaya","Jl. Sudirman No. 12, Jakarta Pusat","-6.2088","106.8228"],
+    ["Warung Makmur","Jl. Gatot Subroto No. 45, Jakarta Selatan","-6.2350","106.8296"],
+    ["Kios Berkah","Jl. Kemang Raya No. 8, Jakarta Selatan","-6.2607","106.8135"],
+    ["Toko Anugerah","Jl. Kelapa Gading Boulevard No. 3, Jakarta Utara","-6.1584","106.9057"],
+    ["Minimarket Sejahtera","Jl. Fatmawati No. 20, Jakarta Selatan","-6.2916","106.7975"],
+    ["Toko Maju Bersama","Jl. Daan Mogot No. 100, Jakarta Barat","-6.1587","106.7639"]
+  ];
+
+  var lastOrdered = null;
+  var lastStart = null;
+  var map = null;
+
+  document.getElementById('btnLoadSample').addEventListener('click', function(){
+    var txt = "Nama Merchant\tAlamat Merchant\tLatitude Merchant\tLongitude Merchant\n" +
+      sample.map(function(r){ return r.join("\t"); }).join("\n");
+    document.getElementById('dataInput').value = txt;
+  });
+
+  document.getElementById('btnGeo').addEventListener('click', function(){
+    if(!navigator.geolocation){
+      showError("Browser ini tidak mendukung deteksi lokasi otomatis.");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(function(pos){
+      document.getElementById('startLat').value = pos.coords.latitude.toFixed(6);
+      document.getElementById('startLng').value = pos.coords.longitude.toFixed(6);
+    }, function(){
+      showError("Gagal mengambil lokasi. Isi koordinat secara manual.");
+    });
+  });
+
+  function showError(msg){
+    var box = document.getElementById('errorBox');
+    box.textContent = msg;
+    box.style.display = 'block';
+  }
+  function clearError(){
+    document.getElementById('errorBox').style.display = 'none';
+  }
+
+  function parseData(raw){
+    var lines = raw.split(/\r?\n/).map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
+    if(lines.length===0) return [];
+    var delim = lines[0].indexOf("\t")>=0 ? "\t" : (lines[0].indexOf(";")>=0 ? ";" : ",");
+    var rows = lines.map(function(l){ return l.split(delim).map(function(c){return c.trim();}); });
+
+    var first = rows[0].join(" ").toLowerCase();
+    if(first.indexOf("nama") >= 0 && first.indexOf("lat") >= 0){
+      rows = rows.slice(1);
+    }
+
+    var out = [];
+    rows.forEach(function(r){
+      if(r.length < 4) return;
+      var lat = parseFloat(r[2].replace(",", "."));
+      var lng = parseFloat(r[3].replace(",", "."));
+      if(isNaN(lat) || isNaN(lng)) return;
+      out.push({ name: r[0], addr: r[1], lat: lat, lng: lng });
+    });
+    return out;
+  }
+
+  function toRad(v){ return v * Math.PI / 180; }
+  function haversine(lat1, lng1, lat2, lng2){
+    var R = 6371;
+    var dLat = toRad(lat2-lat1);
+    var dLng = toRad(lng2-lng1);
+    var a = Math.sin(dLat/2)*Math.sin(dLat/2) +
+            Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*
+            Math.sin(dLng/2)*Math.sin(dLng/2);
+    var c = 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R*c;
+  }
+
+  function nearestNeighborOrder(start, points){
+    var remaining = points.slice();
+    var ordered = [];
+    var cur = start;
+    while(remaining.length){
+      var bestIdx = 0, bestDist = Infinity;
+      for(var i=0;i<remaining.length;i++){
+        var d = haversine(cur.lat, cur.lng, remaining[i].lat, remaining[i].lng);
+        if(d < bestDist){ bestDist = d; bestIdx = i; }
+      }
+      var picked = remaining.splice(bestIdx,1)[0];
+      picked._legDistance = bestDist;
+      ordered.push(picked);
+      cur = picked;
+    }
+    return ordered;
+  }
+
+  document.getElementById('btnCompute').addEventListener('click', function(){
+    clearError();
+    var lat = parseFloat(document.getElementById('startLat').value.replace(",", "."));
+    var lng = parseFloat(document.getElementById('startLng').value.replace(",", "."));
+    if(isNaN(lat) || isNaN(lng)){
+      showError("Koordinat titik awal tidak valid. Isi latitude dan longitude dengan angka.");
+      return;
+    }
+    var points = parseData(document.getElementById('dataInput').value);
+    if(points.length === 0){
+      showError("Data merchant belum terbaca. Tempel data dengan kolom Nama, Alamat, Latitude, Longitude — atau klik 'Muat contoh data'.");
+      return;
+    }
+
+    var start = {lat: lat, lng: lng};
+    var ordered = nearestNeighborOrder(start, points);
+    lastOrdered = ordered;
+    lastStart = start;
+
+    renderResult(start, ordered);
+  });
+
+  function renderResult(start, ordered){
+    document.getElementById('resultSection').style.display = 'block';
+
+    var total = ordered.reduce(function(sum,p){ return sum + p._legDistance; }, 0);
+    var summary = document.getElementById('summaryRow');
+    summary.innerHTML =
+      '<div class="summary-card"><div class="num">' + ordered.length + '</div><div class="lbl">Merchant dikunjungi</div></div>' +
+      '<div class="summary-card"><div class="num">' + total.toFixed(1) + ' km</div><div class="lbl">Total jarak garis lurus</div></div>';
+
+    var body = document.getElementById('resultBody');
+    body.innerHTML = '';
+    var cum = 0;
+    ordered.forEach(function(p, idx){
+      cum += p._legDistance;
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td><span class="badge">' + (idx+1) + '</span></td>' +
+        '<td><div class="merchant-name">' + escapeHtml(p.name) + '</div><div class="merchant-addr">' + escapeHtml(p.addr) + '</div></td>' +
+        '<td class="num">' + p._legDistance.toFixed(1) + ' km</td>' +
+        '<td class="num">' + cum.toFixed(1) + ' km</td>';
+      body.appendChild(tr);
+    });
+
+    renderMap(start, ordered);
+  }
+
+  function escapeHtml(s){
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function renderMap(start, ordered){
+    var el = document.getElementById('map');
+    if(map){ map.remove(); }
+    map = L.map(el);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 19
+    }).addTo(map);
+
+    var latlngs = [[start.lat, start.lng]];
+    var startIcon = L.divIcon({html:'<div class="num-pin start"><span>A</span></div>', iconSize:[26,26], iconAnchor:[13,26]});
+    L.marker([start.lat, start.lng], {icon: startIcon}).addTo(map).bindPopup('Titik awal');
+
+    ordered.forEach(function(p, idx){
+      latlngs.push([p.lat, p.lng]);
+      var icon = L.divIcon({html:'<div class="num-pin"><span>' + (idx+1) + '</span></div>', iconSize:[26,26], iconAnchor:[13,26]});
+      L.marker([p.lat, p.lng], {icon: icon}).addTo(map).bindPopup(escapeHtml(p.name));
+    });
+
+    L.polyline(latlngs, {color:'#FF6B35', weight:3, dashArray:'6 6'}).addTo(map);
+    map.fitBounds(L.latLngBounds(latlngs), {padding:[30,30]});
+  }
+
+  document.getElementById('btnGmaps').addEventListener('click', function(){
+    if(!lastOrdered || !lastStart) return;
+    var origin = lastStart.lat + ',' + lastStart.lng;
+    var last = lastOrdered[lastOrdered.length-1];
+    var destination = last.lat + ',' + last.lng;
+    var waypoints = lastOrdered.slice(0, -1).map(function(p){ return p.lat + ',' + p.lng; }).join('|');
+    var url = 'https://www.google.com/maps/dir/?api=1&origin=' + encodeURIComponent(origin) +
+      '&destination=' + encodeURIComponent(destination) +
+      (waypoints ? '&waypoints=' + encodeURIComponent(waypoints) : '') +
+      '&travelmode=driving';
+    window.open(url, '_blank');
+  });
+
+  document.getElementById('btnExcel').addEventListener('click', function(){
+    if(!lastOrdered || !lastStart) return;
+
+    var wsData = [];
+    wsData.push(['Titik awal (latitude, longitude)', lastStart.lat + ', ' + lastStart.lng]);
+    wsData.push([]);
+    wsData.push(['No', 'Nama Merchant', 'Alamat Merchant', 'Link Google Maps', 'Jarak dari Titik Sebelumnya (km)', 'Jarak Kumulatif (km)']);
+
+    var headerRowIdx = wsData.length - 1;
+    var cum = 0;
+    var linkCells = [];
+
+    lastOrdered.forEach(function(p, idx){
+      cum += p._legDistance;
+      wsData.push([
+        idx + 1,
+        p.name,
+        p.addr,
+        'Buka di Google Maps',
+        Number(p._legDistance.toFixed(2)),
+        Number(cum.toFixed(2))
+      ]);
+      linkCells.push({
+        row: wsData.length - 1,
+        url: 'https://www.google.com/maps?q=' + p.lat + ',' + p.lng
+      });
+    });
+
+    var ws = XLSX.utils.aoa_to_sheet(wsData);
+    ws['!cols'] = [
+      { wch: 5 },
+      { wch: 28 },
+      { wch: 38 },
+      { wch: 22 },
+      { wch: 28 },
+      { wch: 20 }
+    ];
+
+    linkCells.forEach(function(lc){
+      var ref = XLSX.utils.encode_cell({ r: lc.row, c: 3 });
+      if(ws[ref]){
+        ws[ref].l = { Target: lc.url };
+      }
+    });
+
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Rute Kunjungan');
+    XLSX.writeFile(wb, 'rute-kunjungan-merchant.xlsx');
+  });
+})();
+</script>
+</body>
+</html>
